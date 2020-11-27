@@ -14,7 +14,7 @@
 #include <string.h>
 
 hashtable* arguments=NULL;
-char* usage=NULL;
+char* usage="[--help -n [STATION NUMBER] --frame-size [FRAME SIZE] --max-attempt [MAX ATTEMPT]]";
 
 void arguments_begin(void){
     arguments=hashtbl_create(HASHTBL_CAPACITY);
