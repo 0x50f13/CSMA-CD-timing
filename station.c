@@ -6,12 +6,12 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#define FRAME_SIZE 8
 station_t* make_station(uint32_t _id,uint64_t maxAttempt, uint64_t frameSize, channel_t* channel){
     station_t* station=(station_t*)malloc(sizeof(station_t));
     station->_id=_id;
     station->attempt=0;
     station->sizeRemaining=frameSize;
+    station->frameSize=frameSize;
     station->wait=0;
     station->lastCurrent=0;
     station->channel=channel;
@@ -21,7 +21,7 @@ station_t* make_station(uint32_t _id,uint64_t maxAttempt, uint64_t frameSize, ch
     return station;
 }
 
-void station_begin(station_t* station){
+void station_begin(station_t* station, uint64_t t){
     if(station->sizeRemaining==0){
        return ; //Already sent frame
     }
@@ -46,6 +46,7 @@ void station_begin(station_t* station){
        channel_transmit(station->channel);
        station->sizeRemaining--;
        if(station->sizeRemaining==0){
+          station->sentAt=t; 
           station->isTransmitting=false;
           success("Station with %d has finished transmitting data", station->_id);
        }
@@ -56,7 +57,7 @@ void station_begin(station_t* station){
    }
 }
 
-void station_end(station_t* station){ 
+void station_end(station_t* station, uint64_t t){ 
    if(station->sizeRemaining==0){
       return ;
    }
@@ -69,13 +70,13 @@ void station_end(station_t* station){
       //Perform a back-off strategy
       station->attempt++;
       station->isTransmitting=false;
-      station->sizeRemaining=FRAME_SIZE;
+      station->sizeRemaining=station->frameSize;
       if(station->attempt>station->maxAttempt){
          station->sizeRemaining=0;
-         info("Station with id %d cancelled data transmition",station->_id);
+         error("Station with id %d cancelled data transmition(exceeded all attempts)",station->_id);
          return ;
       }
-      info("Station with id %d will re-attempt sending data due to collision",station->_id);
+      debug("Station with id %d will re-attempt sending data due to collision",station->_id);
       station->wait=1+(rand()%16);//1 iteration to measure current
       debug("wait=%d", station->wait); 
    }
