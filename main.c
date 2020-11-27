@@ -3,6 +3,7 @@
 #include "channel.h"
 #include "arguments.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 
@@ -22,11 +23,12 @@ int main(int argc, const char * argv[]){
    argument_add("--frame-size","Size of the frame(default:1518)", ARG_INT, argint(1518), true, false);
    argument_add("--max-attempt","Maximum attempts to retransmit(default:10)", ARG_INT, argint(10), true, false); 
    argument_add("--debug","Enables debug logging",ARG_BOOL, argbool(false), true, false);  
-   
+   argument_add("--hide-progress","Hides progressbar",ARG_BOOL, argbool(false), true, false);
    //Parse arguments
    arguments_parse(argc, argv, 1);
    
    //Variables
+   bool hideProgress=argument_value_get_s("--hide-progress", ARG_BOOL).boolValue;
    uint64_t t=0;//Epoch number
    channel_t* channel=create_channel();
    uint64_t maxAttempt=argument_value_get_s("--max-attempt",ARG_INT).intValue;
@@ -62,8 +64,21 @@ int main(int argc, const char * argv[]){
         if(sent==N){
            success("Finished simulation successfully.");
            break;
-        }
-        ++t;
+        }else if(!hideProgress){
+           printf("\r");
+           fflush(stdout);
+           printf("(");
+           double ratio=(double)(sent)/(double)N;
+           int nBars = ratio*50;
+           for(int k=0;k<nBars;++k){
+               printf("=");
+           }
+           for(int k=0;k<50-nBars;++k){
+               printf(" ");
+           }
+           printf(")%.2f%%\r",100*ratio);
+       }
+       ++t;
     }
     
     //Print table
